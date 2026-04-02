@@ -1,126 +1,224 @@
-'use client'
+"use client"
 
-import Link from 'next/link'
-import { useMemo, useState } from 'react'
-import { getProjectByAddress } from '@/lib/content'
+import Link from "next/link"
+import { useEffect, useMemo, useState } from "react"
 
-export default function ProjectDetailPage({ params }: { params: { address: string } }) {
-  const project = useMemo(() => getProjectByAddress(params.address), [params.address])
+type RouteParams = Promise<{ address: string }>
+
+type Project = {
+  address: string
+  name: string
+  symbol: string
+  ca: string
+  description: string
+  logo?: string
+  banner?: string
+  website?: string
+  twitter?: string
+  telegram?: string
+  stage: "募集中" | "已发射" | "燃烧池已启用"
+}
+
+export default function ProjectDetailPage({
+  params,
+}: {
+  params: RouteParams
+}) {
+  const [address, setAddress] = useState("")
   const [copied, setCopied] = useState(false)
 
-  if (!project) {
-    return (
-      <main className="container" style={{ padding: '54px 20px 0' }}>
-        <div className="card" style={{ padding: 28 }}>
-          <h1 style={{ marginTop: 0 }}>项目不存在</h1>
-          <p style={{ color: '#9cadcf' }}>当前测试站没有找到这个项目地址对应的数据。</p>
-          <Link href="/" className="btn-primary">返回首页</Link>
-        </div>
-      </main>
-    )
-  }
+  useEffect(() => {
+    params.then((p) => setAddress(p.address)).catch(() => setAddress(""))
+  }, [params])
+
+  const project = useMemo<Project | undefined>(() => {
+    if (!address) return undefined
+    return {
+      address,
+      name: "BondForge 测试项目",
+      symbol: "BFGT",
+      ca: address,
+      description:
+        "这是 BondForge BSC 测试网项目详情页。这里会展示项目资料、合约地址、社媒信息、认购入口、NFT 铸造与燃烧池入口。当前先用安全版页面保证构建通过，后续再继续接真实链上数据。",
+      website: "https://www.bondforge.fun",
+      twitter: "https://x.com",
+      telegram: "https://t.me",
+      stage: "募集中",
+    }
+  }, [address])
 
   async function copyCA() {
+    if (!project?.ca) return
     try {
       await navigator.clipboard.writeText(project.ca)
       setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+      window.setTimeout(() => setCopied(false), 1500)
     } catch {
       setCopied(false)
     }
   }
 
+  if (!project) {
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-10">
+        <div className="rounded-2xl border border-white/10 bg-black/20 p-6 text-sm text-white/70">
+          正在读取项目地址...
+        </div>
+      </main>
+    )
+  }
+
   return (
-    <main className="container" style={{ padding: '54px 20px 0' }}>
-      <section className="card" style={{ padding: 24, overflow: 'hidden' }}>
-        <img src={project.banner} alt={project.name} className="project-cover" style={{ height: 240 }} />
-        <div className="two-col" style={{ marginTop: 22 }}>
-          <div>
-            <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-              <img src={project.logo} alt={project.name} style={{ width: 78, height: 78, borderRadius: 20, border: '1px solid rgba(255,255,255,0.08)' }} />
-              <div>
-                <div className="badge">{project.category}</div>
-                <h1 style={{ margin: '10px 0 6px', fontSize: 38 }}>{project.name}</h1>
-                <div style={{ color: '#9cadcf' }}>{project.symbol}</div>
-              </div>
-            </div>
-            <p style={{ marginTop: 18, color: '#9cadcf', lineHeight: 1.8 }}>{project.description}</p>
-            <div className="social-row" style={{ marginTop: 16 }}>
-              {project.socials.map((social) => (
-                <a key={social.label} href={social.href} target="_blank" className="social-chip">{social.label}</a>
-              ))}
-            </div>
+    <main className="mx-auto max-w-6xl px-4 py-10 text-white">
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <div>
+          <div className="mb-2 inline-flex rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-300">
+            {project.stage}
           </div>
-          <div className="card" style={{ padding: 20, background: 'rgba(255,255,255,0.03)' }}>
-            <div style={{ color: '#8ea0c8', fontSize: 13 }}>CA</div>
-            <div style={{ marginTop: 10, lineHeight: 1.8, wordBreak: 'break-all' }}>{project.ca}</div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
-              <button className="btn-primary" onClick={copyCA}>{copied ? '已复制' : '复制 CA'}</button>
-              <a className="btn-secondary" href={`https://testnet.bscscan.com/address/${project.ca}`} target="_blank">BscScan</a>
-            </div>
-            <div className="grid-cards" style={{ marginTop: 18 }}>
-              <div className="kpi"><div className="small-note">价格</div><div style={{ marginTop: 6, fontWeight: 700 }}>{project.mintPrice}</div></div>
-              <div className="kpi"><div className="small-note">Launch Multiple</div><div style={{ marginTop: 6, fontWeight: 700 }}>{project.launchMultiple}</div></div>
-              <div className="kpi"><div className="small-note">钱包上限</div><div style={{ marginTop: 6, fontWeight: 700 }}>{project.walletCap}</div></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="two-col" style={{ marginTop: 22 }}>
-        <div className="card" style={{ padding: 24 }}>
-          <h2 style={{ marginTop: 0 }}>认购与退款</h2>
-          <p className="small-note">募集阶段先拿到可退款认购凭证，不立即分发 NFT。项目打满并完成发射后，系统统一铸造并分发 NFT。</p>
-          <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(2, minmax(0,1fr))', marginTop: 16 }}>
-            <div className="kpi"><div className="small-note">募集进度</div><div style={{ marginTop: 6, fontWeight: 700 }}>{project.progress}%</div></div>
-            <div className="kpi"><div className="small-note">认购凭证总量</div><div style={{ marginTop: 6, fontWeight: 700 }}>{project.receiptSupply}</div></div>
-            <div className="kpi"><div className="small-note">募集窗口</div><div style={{ marginTop: 6, fontWeight: 700 }}>{project.saleWindow}</div></div>
-            <div className="kpi"><div className="small-note">退款费</div><div style={{ marginTop: 6, fontWeight: 700 }}>1% 固定</div></div>
-          </div>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 18 }}>
-            <button className="btn-primary">认购</button>
-            <button className="btn-secondary">退款</button>
-            <button className="btn-secondary">完成发射后分发 NFT</button>
-          </div>
+          <h1 className="text-3xl font-semibold">{project.name}</h1>
+          <p className="mt-2 text-sm text-white/60">
+            {project.symbol} · BSC Testnet
+          </p>
         </div>
 
-        <div className="card" style={{ padding: 24 }}>
-          <h2 style={{ marginTop: 0 }}>单项目 Swap 与 NFT 信息</h2>
-          <div className="kpi"><div className="small-note">NFT 类型</div><div style={{ marginTop: 6, fontWeight: 700 }}>{project.nftMode}</div></div>
-          <div className="kpi" style={{ marginTop: 12 }}><div className="small-note">单项目 Swap</div><div style={{ marginTop: 6, color: '#dfe6f7' }}>项目详情页保留单项目 swap 区块，用于买入 / 卖出当前项目代币。</div></div>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 18 }}>
-            <button className="btn-primary">Buy Token</button>
-            <button className="btn-secondary">Sell Token</button>
-            <Link href="/market" className="btn-secondary">去 NFT 市场</Link>
-          </div>
-        </div>
-      </section>
+        <Link
+          href="/market"
+          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10"
+        >
+          前往 NFT 市场
+        </Link>
+      </div>
 
-      <section className="card" style={{ padding: 24, marginTop: 22 }}>
-        <h2 style={{ marginTop: 0 }}>燃烧池</h2>
-        <p className="small-note">提前退出并被送入燃烧池的 NFT 会显示在这里。进入燃烧池后会暂停后续释放，等待重新购买或处理。</p>
-        <div className="grid-cards" style={{ marginTop: 16 }}>
-          <div className="kpi"><div className="small-note">燃烧池 NFT 数量</div><div style={{ marginTop: 6, fontWeight: 700 }}>{project.burnPool.total}</div></div>
-          <div className="kpi"><div className="small-note">当前燃烧池底价</div><div style={{ marginTop: 6, fontWeight: 700 }}>{project.burnPool.floorPrice}</div></div>
-          <div className="kpi"><div className="small-note">处理方式</div><div style={{ marginTop: 6, fontWeight: 700 }}>折价重售 / 再流转</div></div>
-        </div>
-        <div style={{ display: 'grid', gap: 14, marginTop: 18 }}>
-          {project.burnPool.entries.map((entry) => (
-            <div key={entry.tokenId} className="card" style={{ padding: 18, background: 'rgba(255,255,255,0.03)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+      <section className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
+        <div className="space-y-6">
+          <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
+            <div className="h-48 w-full bg-gradient-to-r from-fuchsia-600/30 via-cyan-500/20 to-emerald-500/30" />
+            <div className="p-6">
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-black/20 text-lg font-semibold">
+                  {project.symbol.slice(0, 2)}
+                </div>
                 <div>
-                  <div style={{ fontWeight: 700 }}>NFT #{entry.tokenId}</div>
-                  <div className="small-note">来源：{entry.source}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 700 }}>{entry.value}</div>
-                  <div className="small-note">{entry.status}</div>
+                  <div className="text-xl font-semibold">{project.name}</div>
+                  <div className="mt-1 text-sm text-white/60">
+                    合约地址 / CA
+                  </div>
                 </div>
               </div>
+
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <div className="mb-2 text-xs uppercase tracking-[0.2em] text-white/40">
+                  Contract Address
+                </div>
+                <div className="break-all text-sm text-white/80">{project.ca}</div>
+                <button
+                  type="button"
+                  onClick={copyCA}
+                  className="mt-3 rounded-xl bg-white px-3 py-2 text-sm font-medium text-black transition hover:opacity-90"
+                >
+                  {copied ? "已复制" : "复制 CA"}
+                </button>
+              </div>
+
+              <p className="mt-4 leading-7 text-white/75">{project.description}</p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                {project.website ? (
+                  <a
+                    href={project.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10"
+                  >
+                    Website
+                  </a>
+                ) : null}
+                {project.twitter ? (
+                  <a
+                    href={project.twitter}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10"
+                  >
+                    X / Twitter
+                  </a>
+                ) : null}
+                {project.telegram ? (
+                  <a
+                    href={project.telegram}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10"
+                  >
+                    Telegram
+                  </a>
+                ) : null}
+              </div>
             </div>
-          ))}
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+            <h2 className="text-xl font-semibold">项目说明</h2>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <InfoCard label="NFT 发放时机" value="项目打满并发射后统一分发 NFT" />
+              <InfoCard label="退款费率" value="固定 1%" />
+              <InfoCard label="网络" value="BSC Testnet" />
+              <InfoCard label="燃烧池" value="支持，燃烧的 NFT 会进入燃烧池" />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <ActionCard
+            title="认购 / 发射"
+            items={[
+              "连接钱包",
+              "自动切换 BSC 测试网",
+              "认购项目",
+              "满额后 Finalize",
+            ]}
+          />
+          <ActionCard
+            title="Swap"
+            items={[
+              "单项目页展示买卖入口",
+              "后续接真实 BSC Testnet 合约",
+            ]}
+          />
+          <ActionCard
+            title="NFT / 燃烧池"
+            items={[
+              "发射成功后统一分发 NFT",
+              "提前退出后 NFT 进入燃烧池",
+              "后续接 ERC-721 市场合约",
+            ]}
+          />
         </div>
       </section>
     </main>
+  )
+}
+
+function InfoCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+      <div className="text-xs uppercase tracking-[0.18em] text-white/40">{label}</div>
+      <div className="mt-2 text-sm text-white/85">{value}</div>
+    </div>
+  )
+}
+
+function ActionCard({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+      <h2 className="text-lg font-semibold">{title}</h2>
+      <ul className="mt-4 space-y-3 text-sm text-white/75">
+        {items.map((item) => (
+          <li key={item} className="rounded-xl border border-white/10 bg-black/20 px-4 py-3">
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
