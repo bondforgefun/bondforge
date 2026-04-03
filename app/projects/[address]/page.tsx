@@ -240,7 +240,8 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     let cancelled = false
     const amountIn = swapAmountWei
-    if (!project || !hasAddress(wrappedNativeToken) || !hasAddress(pancakePoolAddress) || !poolFeeTier || !amountIn) {
+    const currentProject = project
+    if (!currentProject || !hasAddress(wrappedNativeToken) || !hasAddress(pancakePoolAddress) || !poolFeeTier || !amountIn) {
       setSwapQuoteWei(0n)
       setSwapError('')
       setQuoteBusy(false)
@@ -254,8 +255,8 @@ export default function ProjectDetailPage() {
         try {
           const provider = new JsonRpcProvider(RPC_URL)
           const quoter = new Contract(PANCAKE_V3_QUOTER_V2, pancakeQuoterV2Abi, provider)
-          const tokenIn = swapSide === 'buy' ? wrappedNativeToken : project.tokenAddress
-          const tokenOut = swapSide === 'buy' ? project.tokenAddress : wrappedNativeToken
+          const tokenIn = swapSide === 'buy' ? wrappedNativeToken : currentProject.tokenAddress
+          const tokenOut = swapSide === 'buy' ? currentProject.tokenAddress : wrappedNativeToken
           const quote = await quoter.quoteExactInputSingle.staticCall({
             tokenIn,
             tokenOut,
@@ -352,7 +353,8 @@ export default function ProjectDetailPage() {
   }
 
   async function handleSwap() {
-    if (!project || !swapAmountWei || !hasAddress(wrappedNativeToken) || !poolFeeTier) return
+    const currentProject = project
+    if (!currentProject || !swapAmountWei || !hasAddress(wrappedNativeToken) || !poolFeeTier) return
     try {
       setBusyAction('swap')
       setSwapError('')
@@ -371,7 +373,7 @@ export default function ProjectDetailPage() {
         }
         const exactInputCalldata = router.interface.encodeFunctionData('exactInputSingle', [{
           tokenIn: wrappedNativeToken,
-          tokenOut: project.tokenAddress,
+          tokenOut: currentProject.tokenAddress,
           fee: poolFeeTier,
           recipient: signerAddress,
           deadline,
@@ -383,7 +385,7 @@ export default function ProjectDetailPage() {
         const tx = await router.multicall([exactInputCalldata, refundCalldata], { value: swapAmountWei })
         await tx.wait()
       } else {
-        const token = new Contract(project.tokenAddress, tokenAbi, signer)
+        const token = new Contract(currentProject.tokenAddress, tokenAbi, signer)
         const liveTokenBalance = await token.balanceOf(signerAddress)
         if (BigInt(liveTokenBalance.toString()) < swapAmountWei) {
           throw new Error('钱包里的项目 Token 余额不足，无法卖出这么多。')
@@ -397,7 +399,7 @@ export default function ProjectDetailPage() {
           return
         }
         const exactInputCalldata = router.interface.encodeFunctionData('exactInputSingle', [{
-          tokenIn: project.tokenAddress,
+          tokenIn: currentProject.tokenAddress,
           tokenOut: wrappedNativeToken,
           fee: poolFeeTier,
           recipient: PANCAKE_V3_SWAP_ROUTER,
