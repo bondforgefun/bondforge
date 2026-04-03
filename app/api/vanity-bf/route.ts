@@ -1,9 +1,8 @@
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
 import { NextResponse } from 'next/server'
 import { Contract, ContractFactory, JsonRpcProvider, getCreate2Address, getCreateAddress, keccak256, toBeHex } from 'ethers'
 import { FACTORY_ADDRESS, RPC_URL } from '@/lib/bondforge/config'
 import { factoryAbi } from '@/lib/bondforge/abi'
+import launchArtifact from '@/artifacts/contracts/BondForgeLaunch.sol/BondForgeLaunch.json'
 
 export const runtime = 'nodejs'
 
@@ -12,12 +11,6 @@ const MAX_ITERATIONS = 262144
 
 function endsWithBf(value: string) {
   return value.toLowerCase().endsWith(SUFFIX)
-}
-
-async function loadLaunchArtifact() {
-  const artifactPath = path.join(process.cwd(), 'artifacts/contracts/BondForgeLaunch.sol/BondForgeLaunch.json')
-  const raw = await readFile(artifactPath, 'utf8')
-  return JSON.parse(raw) as { abi: any[]; bytecode: string }
 }
 
 export async function POST(request: Request) {
@@ -40,7 +33,7 @@ export async function POST(request: Request) {
       factory.marketplace(),
       factory.swapRouter(),
     ])
-    const artifact = await loadLaunchArtifact()
+    const artifact = launchArtifact as { abi: any[]; bytecode: string }
     const launchFactory = new ContractFactory(artifact.abi, artifact.bytecode)
     const deployTx = await launchFactory.getDeployTransaction(input, issuer, owner, marketplace, swapRouter, positionManager)
     const deployData = deployTx.data

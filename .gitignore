@@ -5,6 +5,13 @@ node_modules
 .deployment-wallet.json
 public/dev-uploads
 artifacts
+!artifacts/
+artifacts/*
+!artifacts/contracts/
+artifacts/contracts/*
+!artifacts/contracts/BondForgeLaunch.sol/
+artifacts/contracts/BondForgeLaunch.sol/*
+!artifacts/contracts/BondForgeLaunch.sol/BondForgeLaunch.json
 cache
 typechain-types
 coverage
