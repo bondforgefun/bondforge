@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/collect-pool-fees",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/run-buybacks",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

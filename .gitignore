@@ -1,0 +1,10 @@
+.next
+node_modules
+.env
+.env.local
+.deployment-wallet.json
+public/dev-uploads
+artifacts
+cache
+typechain-types
+coverage
